@@ -6,7 +6,6 @@ import gnu.io.NoSuchPortException;
 import gnu.io.SerialPort;
 import java.io.IOException;
 import java.io.OutputStream;
-import javax.swing.JOptionPane;
 
 public class PortControl {
     private OutputStream serialOut;
@@ -36,8 +35,8 @@ public class PortControl {
                 portId = CommPortIdentifier.getPortIdentifier(this.portaCOM);
             }catch (NoSuchPortException npe) {
                 //Caso a porta COM não exista será exibido um erro
-                JOptionPane.showMessageDialog(null, "Porta COM não encontrada.",
-                        "Porta COM", JOptionPane.PLAIN_MESSAGE);
+//                JOptionPane.showMessageDialog(null, "Porta COM não encontrada.",
+//                        "Porta COM", JOptionPane.PLAIN_MESSAGE);
             }
             //Abre a porta COM
             SerialPort port = (SerialPort) portId.open("Comunicação serial", this.taxa);
@@ -58,20 +57,20 @@ public class PortControl {
         try {
             serialOut.close();
         }catch (IOException e) {
-            JOptionPane.showMessageDialog(null, "Não foi possível fechar porta COM.",
-                    "Fechar porta COM", JOptionPane.PLAIN_MESSAGE);
+//            JOptionPane.showMessageDialog(null, "Não foi possível fechar porta COM.",
+//                    "Fechar porta COM", JOptionPane.PLAIN_MESSAGE);
         }
     }
 
     /**
-     * @param opcao - Valor a ser enviado pela porta serial
+     * @param option - Valor a ser enviado pela porta serial
      */
-    public void enviaDados(int opcao){
+    public void sendData(int option){
         try {
-            serialOut.write(opcao);//escreve o valor na porta serial para ser enviado
+            serialOut.write(option);//escreve o valor na porta serial para ser enviado
         } catch (IOException ex) {
-            JOptionPane.showMessageDialog(null, "Não foi possível enviar o dado. ",
-                    "Enviar dados", JOptionPane.PLAIN_MESSAGE);
+//            JOptionPane.showMessageDialog(null, "Não foi possível enviar o dado. ",
+//                    "Enviar dados", JOptionPane.PLAIN_MESSAGE);
         }
     }
 }

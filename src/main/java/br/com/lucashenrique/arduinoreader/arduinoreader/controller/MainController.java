@@ -1,7 +1,15 @@
 package br.com.lucashenrique.arduinoreader.arduinoreader.controller;
 
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@SpringBootApplication
+@RestController()
 public class MainController {
+
+
+    @RequestMapping("/")
+    public String test() {
+        return "Servidor funcionando";
+    }
+
 }
