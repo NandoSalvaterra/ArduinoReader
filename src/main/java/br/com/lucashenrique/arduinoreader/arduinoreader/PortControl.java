@@ -1,76 +1,96 @@
 package br.com.lucashenrique.arduinoreader.arduinoreader;
 
-
-import gnu.io.CommPortIdentifier;
-import gnu.io.NoSuchPortException;
-import gnu.io.SerialPort;
-import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import gnu.io.CommPortIdentifier;
+import gnu.io.SerialPort;
+import gnu.io.SerialPortEvent;
+import gnu.io.SerialPortEventListener;
+import java.util.Enumeration;
 
-public class PortControl {
-    private OutputStream serialOut;
-    private int taxa;
-    private String portaCOM;
 
-    /**
-     * Construtor da classe ControlePorta
-     * @param portaCOM - Porta COM que será utilizada para enviar os dados para o arduino
-     * @param taxa - Taxa de transferência da porta serial geralmente é 9600
-     */
-    public PortControl(String portaCOM, int taxa) {
-        this.portaCOM = portaCOM;
-        this.taxa = 9600;
-        this.initialize();
+public class PortControl implements SerialPortEventListener {
+    private SerialPort serialPort;
+    /** The port we're normally going to use. */
+    private static final String PORT_NAMES[] = {                  "/dev/tty.usbserial-A9007UX1", // Mac OS X
+            "/dev/ttyUSB0", // Linux
+            "COM35", // Windows
+    };
+    private BufferedReader input;
+    private OutputStream output;
+    private static final int TIME_OUT = 2000;
+    private static final int DATA_RATE = 9600;
+    private  PortControlListener portControlListener;
+
+    public PortControl(PortControlListener portControlListener){
+        this.portControlListener = portControlListener;
     }
 
-    /**
-     * Médoto que verifica se a comunicação com a porta serial está ok
-     */
-    private void initialize() {
-        try {
-            //Define uma variável portId do tipo CommPortIdentifier para realizar a comunicação serial
-            CommPortIdentifier portId = null;
-            try {
-                //Tenta verificar se a porta COM informada existe
-                portId = CommPortIdentifier.getPortIdentifier(this.portaCOM);
-            }catch (NoSuchPortException npe) {
-                //Caso a porta COM não exista será exibido um erro
-//                JOptionPane.showMessageDialog(null, "Porta COM não encontrada.",
-//                        "Porta COM", JOptionPane.PLAIN_MESSAGE);
+    public void initialize() {
+        CommPortIdentifier portId = null;
+        Enumeration portEnum = CommPortIdentifier.getPortIdentifiers();
+
+        //First, Find an instance of serial port as set in PORT_NAMES.
+        while (portEnum.hasMoreElements()) {
+            CommPortIdentifier currPortId = (CommPortIdentifier) portEnum.nextElement();
+            for (String portName : PORT_NAMES) {
+                if (currPortId.getName().equals(portName)) {
+                    portId = currPortId;
+                    break;
+                }
             }
-            //Abre a porta COM
-            SerialPort port = (SerialPort) portId.open("Comunicação serial", this.taxa);
-            serialOut = port.getOutputStream();
-            port.setSerialPortParams(this.taxa, //taxa de transferência da porta serial
-                    SerialPort.DATABITS_8, //taxa de 10 bits 8 (envio)
-                    SerialPort.STOPBITS_1, //taxa de 10 bits 1 (recebimento)
-                    SerialPort.PARITY_NONE); //receber e enviar dados
-        }catch (Exception e) {
-            e.printStackTrace();
+        }
+        if (portId == null) {
+            System.out.println("Could not find COM port.");
+            return;
+        }
+
+        try {
+            serialPort = (SerialPort) portId.open(this.getClass().getName(),
+                    TIME_OUT);
+            serialPort.setSerialPortParams(DATA_RATE,
+                    SerialPort.DATABITS_8,
+                    SerialPort.STOPBITS_1,
+                    SerialPort.PARITY_NONE);
+
+            // open the streams
+            input = new BufferedReader(new InputStreamReader(serialPort.getInputStream()));
+            output = serialPort.getOutputStream();
+
+            serialPort.addEventListener(this);
+            serialPort.notifyOnDataAvailable(true);
+        } catch (Exception e) {
+            System.err.println(e.toString());
         }
     }
 
-    /**
-     * Método que fecha a comunicação com a porta serial
-     */
-    public void close() {
-        try {
-            serialOut.close();
-        }catch (IOException e) {
-//            JOptionPane.showMessageDialog(null, "Não foi possível fechar porta COM.",
-//                    "Fechar porta COM", JOptionPane.PLAIN_MESSAGE);
+
+    public synchronized void close() {
+        if (serialPort != null) {
+            serialPort.removeEventListener();
+            serialPort.close();
         }
     }
 
-    /**
-     * @param option - Valor a ser enviado pela porta serial
-     */
-    public void sendData(int option){
-        try {
-            serialOut.write(option);//escreve o valor na porta serial para ser enviado
-        } catch (IOException ex) {
-//            JOptionPane.showMessageDialog(null, "Não foi possível enviar o dado. ",
-//                    "Enviar dados", JOptionPane.PLAIN_MESSAGE);
+    public synchronized void serialEvent(SerialPortEvent oEvent) {
+        if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
+            try {
+                if (input.ready()) {
+                    String inputLine = input.readLine();
+                    System.out.println(inputLine);
+                }
+
+            } catch (Exception e) {
+                System.err.println(e.toString());
+            }
         }
+        // Ignore all the other eventTypes, but you should consider the other ones.
     }
+
+    public interface  PortControlListener {
+
+        void onDataReaded(String arduinoData);
+    }
+
 }
