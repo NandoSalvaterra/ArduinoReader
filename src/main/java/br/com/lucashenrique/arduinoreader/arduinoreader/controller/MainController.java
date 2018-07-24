@@ -16,7 +16,7 @@ public class MainController implements PortControl.PortControlListener {
 
     @RequestMapping("/startArduino")
     public String startArduino() {
-        PortControl portControl = new PortControl();
+        PortControl portControl = new PortControl(this);
         portControl.initialize();
         return "Arduino inicializado com sucesso";
     }
